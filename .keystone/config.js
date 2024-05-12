@@ -169,6 +169,7 @@ var passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/;
 // auth.ts
 var import_session = require("@keystone-6/core/session");
 var import_auth = require("@keystone-6/auth");
+var nodemailer = require("nodemailer");
 var { withAuth } = (0, import_auth.createAuth)({
   listKey: "User",
   identityField: "email",
@@ -181,7 +182,7 @@ var { withAuth } = (0, import_auth.createAuth)({
     tokensValidForMins: 60,
     sendToken: async ({ itemId, identity, token, context }) => {
       console.log({ itemId, identity, token, context });
-      const transporter = createTransport({
+      const transporter = nodemailer.createTransport({
         service: "hotmail",
         auth: {
           user: Envs.MAILER_EMAIL,
@@ -201,7 +202,7 @@ var { withAuth } = (0, import_auth.createAuth)({
     tokensValidForMins: 60,
     sendToken: async ({ itemId, identity, token, context }) => {
       console.log({ itemId, identity, token, context });
-      const transporter = createTransport({
+      const transporter = nodemailer.createTransport({
         service: "hotmail",
         auth: {
           user: Envs.MAILER_EMAIL,
