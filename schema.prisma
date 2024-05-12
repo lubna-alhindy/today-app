@@ -64,21 +64,21 @@ model UserTask {
 }
 
 model Task {
-  id           String           @id @default(cuid())
-  title        String           @default("")
-  description  String           @default("")
+  id           String            @id @default(cuid())
+  title        String            @default("")
+  description  String            @default("")
   deadline     DateTime
-  priority     TaskPriorityType @default(medium)
-  status       TaskStatusType   @default(todo)
+  priority     TaskPriorityType? @default(medium)
+  status       TaskStatusType?   @default(todo)
   createdAt    DateTime?
   updatedAt    DateTime?
-  userTasks    UserTask[]       @relation("UserTask_task")
-  collection   Collection?      @relation("Task_collection", fields: [collectionId], references: [id])
-  collectionId String?          @map("collection")
-  createdBy    User?            @relation("Task_createdBy", fields: [createdById], references: [id])
-  createdById  String?          @map("createdBy")
-  updatedBy    User?            @relation("Task_updatedBy", fields: [updatedById], references: [id])
-  updatedById  String?          @map("updatedBy")
+  userTasks    UserTask[]        @relation("UserTask_task")
+  collection   Collection?       @relation("Task_collection", fields: [collectionId], references: [id])
+  collectionId String?           @map("collection")
+  createdBy    User?             @relation("Task_createdBy", fields: [createdById], references: [id])
+  createdById  String?           @map("createdBy")
+  updatedBy    User?             @relation("Task_updatedBy", fields: [updatedById], references: [id])
+  updatedById  String?           @map("updatedBy")
 
   @@index([collectionId])
   @@index([createdById])

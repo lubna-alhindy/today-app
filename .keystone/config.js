@@ -479,22 +479,60 @@ var UserTaskSchema = (0, import_core4.list)({
 var import_fields4 = require("@keystone-6/core/fields");
 var import_core5 = require("@keystone-6/core");
 var import_access4 = require("@keystone-6/core/access");
-var TaskSchema = (0, import_core5.list)({
-  access: {
-    operation: {
-      query: import_access4.allowAll,
-      create: import_access4.allowAll,
-      // ({ listKey, session, context }) =>
-      //   isCollectionAdmin({ listKey, session, context }),
-      update: import_access4.allowAll,
-      delete: import_access4.allowAll
-      //  ({ listKey, session, context }) =>
-      //   isCollectionAdmin({ listKey, session, context }),
+var canRead = async (args) => {
+  const userCollection = await args.context.prisma.userCollection.findFirst({
+    where: {
+      user: {
+        id: args.context.session?.data?.id
+      },
+      collection: {
+        id: args.item.collectionId
+      }
     }
-  },
+  });
+  if (!userCollection) {
+    return false;
+  }
+  return true;
+};
+var canWrite = async (collectionId, userId, context) => {
+  const userCollection = await context.prisma.userCollection.findFirst({
+    where: {
+      user: {
+        id: userId
+      },
+      collection: {
+        id: collectionId
+      }
+    }
+  });
+  if (!userCollection || userCollection.role === "watcher") {
+    return false;
+  }
+  return true;
+};
+var TaskSchema = (0, import_core5.list)({
+  access: import_access4.allowAll,
   hooks: {
+    resolveInput: async ({ inputData, context }) => {
+      const collectionId = inputData.collection.connect.id;
+      const userId = context.session?.data?.id;
+      if (!await canWrite(collectionId, userId, context)) {
+        throw new Error("Unauthorized");
+      }
+      return inputData;
+    },
+    beforeOperation: {
+      delete: async ({ item, context }) => {
+        const collectionId = item.collectionId;
+        const userId = context.session?.data?.id;
+        if (!await canWrite(collectionId, userId, context)) {
+          throw new Error("Unauthorized");
+        }
+      }
+    },
     afterOperation: {
-      create: async ({ item, inputData, context }) => {
+      create: async ({ item, context }) => {
         const userId = context.session?.data?.id;
         if (!userId) {
           throw new Error("You are not authenticated");
@@ -545,22 +583,25 @@ var TaskSchema = (0, import_core5.list)({
   },
   fields: {
     title: (0, import_fields4.text)({
+      access: { read: canRead },
       validation: { isRequired: true },
       ui: {
         displayMode: "input"
       }
     }),
     description: (0, import_fields4.text)({
+      access: { read: canRead },
       validation: { isRequired: true },
       ui: {
         displayMode: "textarea"
       }
     }),
     deadline: (0, import_fields4.timestamp)({
+      access: { read: canRead },
       validation: { isRequired: true }
     }),
     priority: (0, import_fields4.select)({
-      validation: { isRequired: true },
+      access: { read: canRead },
       type: "enum",
       defaultValue: "medium",
       options: [
@@ -571,7 +612,7 @@ var TaskSchema = (0, import_core5.list)({
       ui: { displayMode: "segmented-control" }
     }),
     status: (0, import_fields4.select)({
-      validation: { isRequired: true },
+      access: { read: canRead },
       type: "enum",
       defaultValue: "todo",
       options: [
@@ -582,24 +623,30 @@ var TaskSchema = (0, import_core5.list)({
       ui: { displayMode: "segmented-control" }
     }),
     createdAt: (0, import_fields4.timestamp)({
+      access: { read: canRead },
       validation: { isRequired: false }
     }),
     updatedAt: (0, import_fields4.timestamp)({
+      access: { read: canRead },
       validation: { isRequired: false }
     }),
     userTasks: (0, import_fields4.relationship)({
+      access: { read: canRead },
       ref: "UserTask.task",
       many: true
     }),
     collection: (0, import_fields4.relationship)({
+      access: { read: canRead },
       ref: "Collection.tasks",
       many: false
     }),
     createdBy: (0, import_fields4.relationship)({
+      access: { read: canRead },
       ref: "User",
       many: false
     }),
     updatedBy: (0, import_fields4.relationship)({
+      access: { read: canRead },
       ref: "User",
       many: false
     })
@@ -653,6 +700,9 @@ var UserSchema = (0, import_core6.list)({
   },
   fields: {
     role: (0, import_fields5.select)({
+      access: {
+        update: (args) => isAdmin({ session: args.context.session })
+      },
       type: "enum",
       defaultValue: "user",
       validation: { isRequired: true },
