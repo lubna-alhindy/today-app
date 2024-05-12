@@ -49,7 +49,6 @@ export const TaskSchema: ListConfig<any> = list({
   hooks: {
     afterOperation: {
       create: async ({ item, inputData, context }) => {
-        console.log({ inputData });
         const userId = context.session?.data?.id;
         if (!userId) {
           throw new Error("You are not authenticated");

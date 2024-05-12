@@ -63,6 +63,9 @@ export const UserSchema: ListConfig<any> = list({
         { label: "admin", value: "admin" },
         { label: "user", value: "user" },
       ],
+      ui:{
+        displayMode: 'radio'
+      }
     }),
 
     name: text({

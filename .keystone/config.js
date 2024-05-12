@@ -495,7 +495,6 @@ var TaskSchema = (0, import_core5.list)({
   hooks: {
     afterOperation: {
       create: async ({ item, inputData, context }) => {
-        console.log({ inputData });
         const userId = context.session?.data?.id;
         if (!userId) {
           throw new Error("You are not authenticated");
@@ -660,7 +659,10 @@ var UserSchema = (0, import_core6.list)({
       options: [
         { label: "admin", value: "admin" },
         { label: "user", value: "user" }
-      ]
+      ],
+      ui: {
+        displayMode: "radio"
+      }
     }),
     name: (0, import_fields5.text)({
       validation: { isRequired: true },
