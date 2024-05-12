@@ -150,7 +150,10 @@ var Envs = Object.freeze({
   SESSION_SECRET: process.env.SESSION_SECRET || "",
   // Database
   DATABASE_URL: process.env.DATABASE_URL || "",
-  SHADOW_DATABASE_URL: process.env.SHADOW_DATABASE_URL || ""
+  SHADOW_DATABASE_URL: process.env.SHADOW_DATABASE_URL || "",
+  // NodeMailer
+  MAILER_EMAIL: process.env.MAILER_EMAIL || "",
+  MAILER_PASSWORD: process.env.MAILER_PASSWORD || ""
 });
 
 // src/_shared/config/database.config.ts
@@ -178,12 +181,40 @@ var { withAuth } = (0, import_auth.createAuth)({
     tokensValidForMins: 60,
     sendToken: async ({ itemId, identity, token, context }) => {
       console.log({ itemId, identity, token, context });
+      const transporter = createTransport({
+        service: "hotmail",
+        auth: {
+          user: Envs.MAILER_EMAIL,
+          pass: Envs.MAILER_PASSWORD
+        }
+      });
+      const info = await transporter.sendMail({
+        from: "<no-reply> | today@misraj.net",
+        to: identity,
+        subject: "Password Reset Link",
+        text: `Here is your password reset link: http://localhost:3000/auth/reset-password?token=${token}`
+      });
+      console.log("Message sent: %s", info.messageId);
     }
   },
   passwordResetLink: {
     tokensValidForMins: 60,
     sendToken: async ({ itemId, identity, token, context }) => {
       console.log({ itemId, identity, token, context });
+      const transporter = createTransport({
+        service: "hotmail",
+        auth: {
+          user: Envs.MAILER_EMAIL,
+          pass: Envs.MAILER_PASSWORD
+        }
+      });
+      const info = await transporter.sendMail({
+        from: "<no-reply> | today@misraj.net",
+        to: identity,
+        subject: "Password Reset Link",
+        text: `Here is your password reset link: http://localhost:3000/auth/reset-password?token=${token}`
+      });
+      console.log("Message sent: %s", info.messageId);
     }
   }
 });
@@ -277,10 +308,15 @@ var CollectionSchema = (0, import_core2.list)({
     })
   },
   ui: {
-    labelField: "name",
     description: "Collection Page ",
     listView: {
-      initialColumns: ["name", "createdAt", "updatedAt", "createdBy", "updatedBy"]
+      initialColumns: [
+        "name",
+        "createdAt",
+        "updatedAt",
+        "createdBy",
+        "updatedBy"
+      ]
     }
   }
 });

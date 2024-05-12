@@ -95,10 +95,15 @@ export const CollectionSchema: ListConfig<any> = list({
   },
 
   ui: {
-    labelField: "name",
     description: "Collection Page ",
     listView: {
-      initialColumns: ["name", "createdAt", "updatedAt", "createdBy" ,'updatedBy'],
+      initialColumns: [
+        "name",
+        "createdAt",
+        "updatedAt",
+        "createdBy",
+        "updatedBy",
+      ],
     },
   },
 });

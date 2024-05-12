@@ -9,4 +9,8 @@ export const Envs = Object.freeze({
   // Database
   DATABASE_URL: process.env.DATABASE_URL || "",
   SHADOW_DATABASE_URL: process.env.SHADOW_DATABASE_URL || "",
+
+  // NodeMailer
+  MAILER_EMAIL: process.env.MAILER_EMAIL || "",
+  MAILER_PASSWORD: process.env.MAILER_PASSWORD || "",
 });
