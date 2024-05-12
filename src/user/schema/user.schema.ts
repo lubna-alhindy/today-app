@@ -56,6 +56,9 @@ export const UserSchema: ListConfig<any> = list({
 
   fields: {
     role: select({
+      access: {
+        update: (args) => isAdmin({ session: args.context.session }),
+      },
       type: "enum",
       defaultValue: "user",
       validation: { isRequired: true },
@@ -63,9 +66,9 @@ export const UserSchema: ListConfig<any> = list({
         { label: "admin", value: "admin" },
         { label: "user", value: "user" },
       ],
-      ui:{
-        displayMode: 'radio'
-      }
+      ui: {
+        displayMode: "radio",
+      },
     }),
 
     name: text({

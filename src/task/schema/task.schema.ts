@@ -1,54 +1,74 @@
 import { relationship, select, text, timestamp } from "@keystone-6/core/fields";
 import { ListConfig, list } from "@keystone-6/core";
 import { allowAll } from "@keystone-6/core/access";
-import { CollectionSchema } from "../../collection";
-import { KeystoneContext } from "@keystone-6/core/types";
+import {
+  FieldReadItemAccessArgs,
+  KeystoneContext,
+} from "@keystone-6/core/types";
 
-// const isCollectionAdmin = async ({
-//   listKey,
-//   session,
-//   context,
-// }: {
-//   listKey: any;
-//   session: { data: { id: string; role: string } };
-//   context: KeystoneContext<any>;
-// }) => {
-//   const userId = session.data.id;
+const canRead = async (args: FieldReadItemAccessArgs<any>) => {
+  const userCollection = await args.context.prisma.userCollection.findFirst({
+    where: {
+      user: {
+        id: args.context.session?.data?.id,
+      },
+      collection: {
+        id: args.item.collectionId,
+      },
+    },
+  });
+  if (!userCollection) {
+    return false;
+  }
+  return true;
+};
 
-//   const userCollection = await context.prisma.userCollection.findFirst({
-//     where: {
-//       user: {
-//         id: userId,
-//       },
-//       collection: {
-//         // id: collectionId,
-//       },
-//     },
-//   });
-
-//   if (!userCollection || userCollection.role !== "admin") {
-//     return false;
-//   }
-//   return true;
-// };
+const canWrite = async (
+  collectionId: string,
+  userId: string,
+  context: KeystoneContext<any>
+) => {
+  const userCollection = await context.prisma.userCollection.findFirst({
+    where: {
+      user: {
+        id: userId,
+      },
+      collection: {
+        id: collectionId,
+      },
+    },
+  });
+  if (!userCollection || userCollection.role === "watcher") {
+    return false;
+  }
+  return true;
+};
 
 export const TaskSchema: ListConfig<any> = list({
-  access: {
-    operation: {
-      query: allowAll,
-      create: allowAll,
-      // ({ listKey, session, context }) =>
-      //   isCollectionAdmin({ listKey, session, context }),
-      update: allowAll,
-      delete: allowAll,
-      //  ({ listKey, session, context }) =>
-      //   isCollectionAdmin({ listKey, session, context }),
-    },
-  },
+  access: allowAll,
 
   hooks: {
+    resolveInput: async ({ inputData, context }) => {
+      const collectionId = inputData.collection.connect.id;
+      const userId = context.session?.data?.id;
+      if (!(await canWrite(collectionId, userId, context))) {
+        throw new Error("Unauthorized");
+      }
+      return inputData;
+    },
+
+    beforeOperation: {
+      delete: async ({ item, context }) => {
+        const collectionId = item.collectionId;
+        const userId = context.session?.data?.id;
+        if (!(await canWrite(collectionId, userId, context))) {
+          throw new Error("Unauthorized");
+        }
+      },
+    },
+
     afterOperation: {
-      create: async ({ item, inputData, context }) => {
+      create: async ({ item, context }) => {
         const userId = context.session?.data?.id;
         if (!userId) {
           throw new Error("You are not authenticated");
@@ -103,6 +123,7 @@ export const TaskSchema: ListConfig<any> = list({
 
   fields: {
     title: text({
+      access: { read: canRead },
       validation: { isRequired: true },
       ui: {
         displayMode: "input",
@@ -110,17 +131,19 @@ export const TaskSchema: ListConfig<any> = list({
     }),
 
     description: text({
+      access: { read: canRead },
       validation: { isRequired: true },
       ui: {
         displayMode: "textarea",
       },
     }),
     deadline: timestamp({
+      access: { read: canRead },
       validation: { isRequired: true },
     }),
 
     priority: select({
-      validation: { isRequired: true },
+      access: { read: canRead },
       type: "enum",
       defaultValue: "medium",
       options: [
@@ -132,7 +155,7 @@ export const TaskSchema: ListConfig<any> = list({
     }),
 
     status: select({
-      validation: { isRequired: true },
+      access: { read: canRead },
       type: "enum",
       defaultValue: "todo",
       options: [
@@ -144,29 +167,35 @@ export const TaskSchema: ListConfig<any> = list({
     }),
 
     createdAt: timestamp({
+      access: { read: canRead },
       validation: { isRequired: false },
     }),
 
     updatedAt: timestamp({
+      access: { read: canRead },
       validation: { isRequired: false },
     }),
 
     userTasks: relationship({
+      access: { read: canRead },
       ref: "UserTask.task",
       many: true,
     }),
 
     collection: relationship({
+      access: { read: canRead },
       ref: "Collection.tasks",
       many: false,
     }),
 
     createdBy: relationship({
+      access: { read: canRead },
       ref: "User",
       many: false,
     }),
 
     updatedBy: relationship({
+      access: { read: canRead },
       ref: "User",
       many: false,
     }),
